@@ -122,7 +122,7 @@ pytest -q
 ruff check src tests
 ```
 
-Tests mock cloud providers and run the template path offline.
+Tests mock cloud providers and run the template path offline. GitHub Actions runs lint and tests on each push and pull request to `main`.
 
 ## Security and license
 
