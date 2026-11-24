@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fde-architecture-mission-scoper"
+version = "0.1.0"
+description = "Turn a vague enterprise AI request into a four-week SOW, pilot plan, STRIDE threat model, and architecture diagram."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+keywords = ["fde", "architecture", "sow", "pilot-plan", "threat-model"]
+dependencies = [
+  "pydantic>=2.7",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.40"]
+vertex = ["google-genai>=1.0"]
+ui = ["streamlit>=1.36"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+scoper = "scoper.cli:main"
+
+[project.urls]
+Repository = "https://github.com/Goose0x/fde-architecture-mission-scoper"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "W"]
+ignore = ["E501"]

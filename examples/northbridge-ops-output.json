@@ -1,0 +1,151 @@
+{
+  "customer_problem": "Operators assemble site briefs by hand from shared drives and chat threads. The same question can surface material a given role should not see, and the assistant is simply unavailable when a site network link is down. The intake asks for a scoped four-week pilot, not a company-wide rollout. This package uses only fictional, unclassified assumptions about Northbridge Logistics.",
+  "sow": {
+    "title": "Role-restricted operations assistant — four-week pilot",
+    "problem": "Stand up a pilot assistant that drafts operations briefs for a fictional logistics company, respects role-based access, keeps sensitive fields out of the model context, and continues to run inside a private network when public egress is blocked.",
+    "users": [
+      "Site operations lead (drafts and reviews briefs)",
+      "Finance analyst (different document set)",
+      "Approver (human-in-the-loop for outbound partner shares)"
+    ],
+    "constraints": [
+      "Fictional, unclassified company data only",
+      "Document-level access control at retrieval time",
+      "No public internet egress from the pilot VPC",
+      "High-stakes actions (share with a partner, or open a ticket) require a recorded human approval"
+    ],
+    "weeks": [
+      {
+        "week": 1,
+        "goals": [
+          "Lock the data model, roles, and fixture corpus",
+          "Stand up retrieval with document ACLs"
+        ],
+        "deliverables": [
+          "Role matrix",
+          "Unclassified fixture set",
+          "ACL-filtered retrieval spike"
+        ]
+      },
+      {
+        "week": 2,
+        "goals": [
+          "Add a deterministic sensitive-field proxy",
+          "Wire a first brief-drafting prompt"
+        ],
+        "deliverables": [
+          "Tokenize-and-restore path with an audit log",
+          "Draft-brief API"
+        ]
+      },
+      {
+        "week": 3,
+        "goals": [
+          "Pause high-stakes tool calls for human approval",
+          "Prove the workflow survives a restart"
+        ],
+        "deliverables": [
+          "Approval inbox for share/ticket actions",
+          "Crash-recovery demo script"
+        ]
+      },
+      {
+        "week": 4,
+        "goals": [
+          "Deploy into a private VPC with no public egress",
+          "Measure the pilot against the success metrics"
+        ],
+        "deliverables": [
+          "Terraform/Helm private-VPC deploy",
+          "Egress smoke test",
+          "Pilot readout"
+        ]
+      }
+    ],
+    "out_of_scope": [
+      "Live production data or real customer records",
+      "Company-wide rollout beyond the first operations-center cohort",
+      "Production identity federation (stub identity is enough for the pilot)"
+    ]
+  },
+  "pilot_plan": {
+    "baseline": "Briefs are assembled manually from shared drives. Role-based access is informal. There is no assistant when a site link is down, and outbound partner shares have no recorded approval.",
+    "success_measures": [
+      "Zero unauthorized document hits on the fixture ACL tests",
+      "All planted sensitive spans are tokenized before inference",
+      "An in-flight approval still waits after a worker restart",
+      "Egress smoke test shows no public internet path from the pilot VPC"
+    ],
+    "first_shippable_slice": "ACL-filtered retrieval, a sensitive-field proxy, one approval-gated action, and a private-VPC deploy on the fictional fixture set.",
+    "first_users": [
+      "Two fictional site operations leads",
+      "One fictional finance analyst",
+      "One fictional approver"
+    ]
+  },
+  "threat_model": {
+    "summary": "The pilot's main risks are identity confusion, prompt or corpus tampering, unlogged shares, leakage across role boundaries, a hard dependency on a single model endpoint, and an agent expanding its own privileges.",
+    "items": [
+      {
+        "category": "spoofing",
+        "threat": "A user or agent presents itself as a more privileged role and retrieves the wrong corpus.",
+        "mitigation": "Authenticate at the edge, bind every request to a role, and enforce ACLs in the retriever, not the prompt."
+      },
+      {
+        "category": "tampering",
+        "threat": "Fixture documents or prompts are modified to exfiltrate another role's context.",
+        "mitigation": "Version and hash the corpus, restrict who can edit prompts, and review retrieval traces."
+      },
+      {
+        "category": "repudiation",
+        "threat": "A share or ticket is issued and later denied because there is no durable record.",
+        "mitigation": "Immutable audit log plus a workflow history for every high-stakes action."
+      },
+      {
+        "category": "information_disclosure",
+        "threat": "Sensitive spans or unauthorized documents reach the model or another user.",
+        "mitigation": "Document-level access control, pre-inference tokenization, and no public egress from the VPC."
+      },
+      {
+        "category": "denial_of_service",
+        "threat": "The assistant becomes unusable if a cloud endpoint is unreachable — the original customer complaint.",
+        "mitigation": "Keep inference and stores inside the private VPC; fail closed on egress; test a blocked-internet path."
+      },
+      {
+        "category": "elevation_of_privilege",
+        "threat": "The agent calls a write or share tool it was not granted, or expands its own scopes.",
+        "mitigation": "Short-lived task-bound credentials, allowlisted tools, and a human approval gate on restricted actions."
+      }
+    ]
+  },
+  "architecture": {
+    "mermaid": "flowchart LR\n  Officer[Site operations lead] --> UI[Ops UI]\n  UI --> API[Pilot API]\n  API --> ACL[Document ACL]\n  API --> Proxy[Sensitive-field proxy]\n  ACL --> RAG[Secure retriever]\n  Proxy --> RAG\n  RAG --> Store[Vector store]\n  Proxy --> LLM[Model in private VPC]\n  API --> Gate[Approval workflow]\n  Gate --> Approver[Human approver]\n  API --> Audit[Audit and traces]\n  VPC[Google Cloud private VPC, no public egress] -.-> API",
+    "caption": "Pilot request path inside a Google Cloud private VPC: authorize, tokenize, retrieve only authorized chunks, infer with no public egress, and pause restricted actions for a human."
+  },
+  "success_metrics": [
+    {
+      "name": "Unauthorized retrieval rate",
+      "baseline": "Not measured; shared-drive access is informal",
+      "target": "0 hits on the fixture ACL suite",
+      "how_measured": "Automated retrieval tests per role"
+    },
+    {
+      "name": "Sensitive-span handling",
+      "baseline": "Raw fields can be pasted into a chat tool",
+      "target": "100% of planted spans tokenized before infer",
+      "how_measured": "Proxy audit log vs. planted fixture values"
+    },
+    {
+      "name": "Approval durability",
+      "baseline": "No recorded approval for outbound partner shares",
+      "target": "In-flight approvals resume after a forced worker restart",
+      "how_measured": "Chaos step in the demo script"
+    },
+    {
+      "name": "Egress posture",
+      "baseline": "Tools assume public internet",
+      "target": "No public egress from the pilot VPC",
+      "how_measured": "Automated egress smoke test"
+    }
+  ]
+}

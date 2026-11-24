@@ -1,0 +1,139 @@
+{
+  "customer_problem": "Analysts swivel-chair between a chat assistant and a thick-client ERP or ticket system. Any automation today would mean a shared password and unlogged writes. The intake asks for a scoped four-week pilot that can read — and carefully write — a legacy system of record through a typed tool interface.",
+  "sow": {
+    "title": "Legacy system-of-record assistant — four-week pilot",
+    "problem": "Give an assistant a safe, allowlisted interface to a fictional legacy SOAP/RPC system so users can look up records and propose updates without a raw pipe to destructive methods.",
+    "users": [
+      "Operations analyst (lookups and proposed updates)",
+      "Approver (commits to the system of record)",
+      "IT administrator (allowlist and audit review)"
+    ],
+    "constraints": [
+      "Fictional records only; no production ERP connectivity",
+      "Writes are dry-run by default",
+      "Deny-by-default for methods not on the allowlist",
+      "Every tool call is audited"
+    ],
+    "weeks": [
+      {
+        "week": 1,
+        "goals": [
+          "Stand up a mock SOAP service and a typed tool contract"
+        ],
+        "deliverables": [
+          "Mock schema and fixture records",
+          "Read-only lookup tools"
+        ]
+      },
+      {
+        "week": 2,
+        "goals": [
+          "Add a two-phase write path (propose, then commit)"
+        ],
+        "deliverables": [
+          "Dry-run diffs",
+          "Explicit commit flag"
+        ]
+      },
+      {
+        "week": 3,
+        "goals": [
+          "Enforce the allowlist and wire an optional human approval on commit"
+        ],
+        "deliverables": [
+          "Deny-by-default policy tests",
+          "Approval hook"
+        ]
+      },
+      {
+        "week": 4,
+        "goals": [
+          "Package a client config, audit viewer, and pilot readout"
+        ],
+        "deliverables": [
+          "Documented tool-client config",
+          "Audit sample",
+          "Pilot metrics"
+        ]
+      }
+    ],
+    "out_of_scope": [
+      "A real SAP, Oracle, or other vendor connection",
+      "Bulk data migration",
+      "Replacing the legacy client for all users"
+    ]
+  },
+  "pilot_plan": {
+    "baseline": "Lookups and updates happen in a thick client. Informal copy-paste into a chat tool is unlogged. There is no allowlist or dry-run for automated writes.",
+    "success_measures": [
+      "100% of non-allowlisted methods are denied in contract tests",
+      "Every write produces a dry-run diff and an audit record before commit",
+      "Commit cannot proceed without an explicit confirmation (and an approval id when enabled)"
+    ],
+    "first_shippable_slice": "Read tools plus a two-phase write against a mock SOAP service, with deny-by-default and a published client config.",
+    "first_users": [
+      "One fictional operations analyst",
+      "One fictional approver",
+      "One fictional IT administrator"
+    ]
+  },
+  "threat_model": {
+    "summary": "The pilot must not become an unauthenticated, unlogged back door into a system of record, even when that system is a mock.",
+    "items": [
+      {
+        "category": "spoofing",
+        "threat": "A caller invokes tools without a user or task identity.",
+        "mitigation": "Require a user-bound credential on every tool call; reject anonymous traffic."
+      },
+      {
+        "category": "tampering",
+        "threat": "A proposed update is altered between dry-run and commit.",
+        "mitigation": "Bind commit to the dry-run hash and expire stale proposals."
+      },
+      {
+        "category": "repudiation",
+        "threat": "A record changes and no one can show which tool call did it.",
+        "mitigation": "Append-only audit with tool name, actor, payload, and result."
+      },
+      {
+        "category": "information_disclosure",
+        "threat": "The model echoes fields a given user should not see.",
+        "mitigation": "Filter tool results by role and keep raw SOAP out of logs by default."
+      },
+      {
+        "category": "denial_of_service",
+        "threat": "A looping agent floods the legacy mock or the real interface later.",
+        "mitigation": "Rate limits, timeouts, and idempotency keys on writes."
+      },
+      {
+        "category": "elevation_of_privilege",
+        "threat": "The agent calls a delete or admin method that was never granted.",
+        "mitigation": "Deny-by-default allowlist and contract tests for disallowed methods."
+      }
+    ]
+  },
+  "architecture": {
+    "mermaid": "flowchart LR\n  User[Analyst] --> Agent[Assistant]\n  Agent --> MCP[Typed tool server]\n  MCP --> Policy[Allowlist and schema]\n  Policy --> Adapter[Legacy SOAP adapter]\n  Adapter --> Mock[Mock system of record]\n  Policy --> Audit[Audit log]\n  Policy -.-> Approver[Optional human approval]",
+    "caption": "The assistant never talks to the legacy API directly. A typed tool layer applies allowlist, schema, dry-run, and audit policy first."
+  },
+  "success_metrics": [
+    {
+      "name": "Allowlist enforcement",
+      "baseline": "No method-level policy",
+      "target": "100% of disallowed methods denied",
+      "how_measured": "Contract test suite against the mock service"
+    },
+    {
+      "name": "Write safety",
+      "baseline": "Unlogged direct edits in a thick client",
+      "target": "Every write has a dry-run diff and an audit record",
+      "how_measured": "Audit log review of the demo script"
+    },
+    {
+      "name": "Time to look up a record",
+      "baseline": "Swivel-chair between chat and thick client",
+      "target": "Lookup completed in one assistant turn on fixture records",
+      "how_measured": "Timed walkthrough on the sample data"
+    }
+  ]
+}
